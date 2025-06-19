@@ -1,35 +1,29 @@
 const express = require('express');
 const multer = require('multer');
-const { uploadToS3 } = require('../utils/s3Uploader');
-const Product = require('../models/Product');
+const {
+  addProduct,
+  getAllProducts,
+  getProductById,
+  updateProduct,
+  deleteProduct
+} = require('../controllers/productController');
 
 const router = express.Router();
-const upload = multer({ dest: 'uploads/' }); // temporary local storage
+const upload = multer({ dest: 'uploads/' });
 
-// POST /api/products/add
-router.post('/add', upload.single('image'), async (req, res) => {
-  try {
-    // Upload image to S3
-    const s3Result = await uploadToS3(req.file);
+// CREATE: Add new product
+router.post('/addNewProduct', upload.single('image'), addProduct);
 
-    // Save product info to DB
-    const newProduct = new Product({
-      title: req.body.title,
-      description: req.body.description,
-      price: req.body.price,
-      category: req.body.category,
-      sizes: req.body.sizes.split(','),
-      inventory: req.body.inventory,
-      imageUrls: [s3Result.Location]  // S3 image URL
-    });
+// READ: Get all products
+router.get('/getAllProducts', getAllProducts);
 
-    await newProduct.save();
-    res.status(201).json({ message: 'Product added successfully', product: newProduct });
+// READ: Get single product by ID
+router.get('/getProductById/:id', getProductById);
 
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Product upload failed', error });
-  }
-});
+// UPDATE: Update product by ID (with optional image)
+router.put('/updateProduct/:id', upload.single('image'), updateProduct);
+
+// DELETE: Delete product by ID
+router.delete('/deleteProduct/:id', deleteProduct);
 
 module.exports = router;
